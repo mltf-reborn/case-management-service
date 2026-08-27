@@ -18,11 +18,93 @@ repositories {
 }
 
 dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'com.google.cloud:google-cloud-spanner:6.120.0'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
+	testImplementation 'io.projectreactor:reactor-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.named('jar') {
+	enabled = false
+}
+
+abstract class MinikubeDeployTask extends DefaultTask {
+	@javax.inject.Inject
+	abstract org.gradle.process.ExecOperations getExecOperations()
+
+	@TaskAction
+	def deploy() {
+		def version = project.version.toString()
+
+		println ">>> [1/4] Building Docker image 'case-management-service:${version}' with VERSION=${version}..."
+		execOperations.exec {
+			commandLine 'docker', 'build', '--build-arg', "VERSION=${version}", '-t', "case-management-service:${version}", '-t', 'case-management-service:latest', '.'
+		}
+
+		println ">>> [2/4] Loading Docker image into Minikube..."
+		execOperations.exec {
+			commandLine 'minikube', 'image', 'load', "case-management-service:${version}"
+		}
+
+		println ">>> [3/4] Applying Kubernetes manifests from k8s/..."
+		execOperations.exec {
+			commandLine 'kubectl', 'apply', '-k', 'k8s', '--server-side', '--force-conflicts'
+		}
+
+		println ">>> [4/4] Waiting for case-management-service deployment rollout..."
+		execOperations.exec {
+			commandLine 'kubectl', 'rollout', 'status', 'deployment/case-management-service', '--timeout=180s'
+		}
+
+		println "\n========================================================"
+		println " Case Management Service successfully deployed to Minikube!"
+		println "========================================================"
+		println "Service status:"
+		execOperations.exec {
+			commandLine 'kubectl', 'get', 'svc', 'case-management-service'
+		}
+		println "\nMinikube Service URL:"
+		try {
+			execOperations.exec {
+				commandLine 'minikube', 'service', 'case-management-service', '--url'
+			}
+		} catch (Exception ignored) {
+			println "Run: minikube service case-management-service --url"
+		}
+	}
+}
+
+abstract class MinikubeUndeployTask extends DefaultTask {
+	@javax.inject.Inject
+	abstract org.gradle.process.ExecOperations getExecOperations()
+
+	@TaskAction
+	def undeploy() {
+		println ">>> Deleting Kubernetes resources from Minikube..."
+		execOperations.exec {
+			commandLine 'kubectl', 'delete', '-k', 'k8s', '--ignore-not-found=true'
+		}
+		println ">>> case-management-service resources undeployed successfully."
+	}
+}
+
+tasks.register('minikubeDeploy', MinikubeDeployTask) {
+	group = 'deployment'
+	description = 'Builds the JAR, builds & loads Docker image into Minikube, applies k8s manifests, and waits for rollout.'
+	dependsOn 'bootJar'
+}
+
+tasks.register('minikubeUndeploy', MinikubeUndeployTask) {
+	group = 'deployment'
+	description = 'Deletes all case-management-service Kubernetes resources from Minikube.'
 }
