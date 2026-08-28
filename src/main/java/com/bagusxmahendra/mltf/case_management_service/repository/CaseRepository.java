@@ -45,4 +45,27 @@ public interface CaseRepository {
      * @return Flux of all CaseEntity records
      */
     Flux<CaseEntity> findAll();
+
+    /**
+     * Update the KYC profile status and associated audit fields in the kyc_profile table for a user.
+     *
+     * @param userId the user ID associated with the KYC profile
+     * @param status the updated status (e.g. IN_PROGRESS, ACCEPTED, REJECTED)
+     * @param remarks case summary remarks or compliance notes
+     * @param rejectionReason rejection reason if rejected
+     * @param verifiedBy identifier of the reviewer or officer
+     * @return Mono<Void> indicating completion
+     */
+    Mono<Void> updateKycProfileStatus(String userId, String status, String remarks, String rejectionReason, String verifiedBy);
+
+    /**
+     * Update the KYC profile status for a user.
+     *
+     * @param userId the user ID associated with the KYC profile
+     * @param status the updated status (e.g. IN_PROGRESS, ACCEPTED, REJECTED)
+     * @return Mono<Void> indicating completion
+     */
+    default Mono<Void> updateKycProfileStatus(String userId, String status) {
+        return updateKycProfileStatus(userId, status, null, null, null);
+    }
 }

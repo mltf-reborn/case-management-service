@@ -27,7 +27,7 @@ public class SpannerCaseRepository implements CaseRepository {
 
     private static final String SELECT_CASE_COLUMNS =
             "SELECT case_id, user_id, case_type, case_status, document_url, selfie_url, " +
-            "document_verification_details, selfie_details, kyc_details, " +
+            "document_verification_details, selfie_details, kyc_details, external_kyc_details, " +
             "risk_score, risk_level, rejection_reason, remarks, assigned_to, " +
             "created_at, updated_at " +
             "FROM `case` ";
@@ -54,6 +54,7 @@ public class SpannerCaseRepository implements CaseRepository {
                     .set("document_verification_details").to(Value.json(caseEntity.documentVerificationDetails()))
                     .set("selfie_details").to(Value.json(caseEntity.selfieDetails()))
                     .set("kyc_details").to(Value.json(caseEntity.kycDetails()))
+                    .set("external_kyc_details").to(Value.json(caseEntity.externalKycDetails()))
                     .set("risk_score").to(caseEntity.riskScore())
                     .set("risk_level").to(caseEntity.riskLevel())
                     .set("rejection_reason").to(caseEntity.rejectionReason())
@@ -152,5 +153,39 @@ public class SpannerCaseRepository implements CaseRepository {
         })
         .subscribeOn(Schedulers.boundedElastic())
         .flatMapMany(Flux::fromIterable);
+    }
+
+    @Override
+    public Mono<Void> updateKycProfileStatus(String userId, String status, String remarks, String rejectionReason, String verifiedBy) {
+        return Mono.fromRunnable(() -> {
+            log.debug("Updating kyc_profile table status to {} for userId: {}", status, userId);
+            try {
+                databaseClient.readWriteTransaction().run(transaction -> {
+                    Statement statement = Statement.newBuilder(
+                            "UPDATE kyc_profile SET " +
+                            "status = @status, " +
+                            "rejection_reason = @rejectionReason, " +
+                            "remarks = @remarks, " +
+                            "verified_by = @verifiedBy, " +
+                            "verified_at = PENDING_COMMIT_TIMESTAMP(), " +
+                            "updated_at = PENDING_COMMIT_TIMESTAMP() " +
+                            "WHERE user_id = @userId")
+                            .bind("status").to(Value.string(status))
+                            .bind("rejectionReason").to(Value.string(rejectionReason))
+                            .bind("remarks").to(Value.string(remarks))
+                            .bind("verifiedBy").to(Value.string(verifiedBy))
+                            .bind("userId").to(Value.string(userId))
+                            .build();
+
+                    long updatedRows = transaction.executeUpdate(statement);
+                    log.info("Updated kyc_profile for userId: {}, status: {}, rows affected: {}", userId, status, updatedRows);
+                    return null;
+                });
+            } catch (Exception e) {
+                log.warn("Failed to update kyc_profile for userId {}: {}", userId, e.getMessage());
+            }
+        })
+        .subscribeOn(Schedulers.boundedElastic())
+        .then();
     }
 }

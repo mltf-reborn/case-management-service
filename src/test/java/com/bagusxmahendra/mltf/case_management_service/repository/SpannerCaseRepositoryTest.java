@@ -35,6 +35,12 @@ class SpannerCaseRepositoryTest {
     @Mock
     private Struct struct;
 
+    @Mock
+    private TransactionRunner transactionRunner;
+
+    @Mock
+    private TransactionContext transactionContext;
+
     private SpannerCaseRepository repository;
 
     @BeforeEach
@@ -55,6 +61,7 @@ class SpannerCaseRepositoryTest {
                 "{\"status\":\"SUCCESS\"}",
                 "{\"isIdentical\":true}",
                 "{\"fullName\":\"John Doe\"}",
+                null,
                 15.0,
                 "LOW",
                 null,
@@ -111,6 +118,8 @@ class SpannerCaseRepositoryTest {
         when(struct.isNull("kyc_details")).thenReturn(false);
         when(struct.getJson("kyc_details")).thenReturn("{\"fullName\":\"John Doe\"}");
 
+        when(struct.isNull("external_kyc_details")).thenReturn(true);
+
         when(struct.isNull("risk_score")).thenReturn(false);
         when(struct.getDouble("risk_score")).thenReturn(12.5);
 
@@ -149,5 +158,25 @@ class SpannerCaseRepositoryTest {
 
         StepVerifier.create(repository.findById("CASE-NOT-EXIST"))
                 .verifyComplete();
+    }
+
+    @Test
+    void updateKycProfileStatus_executesDmlStatement() {
+        when(databaseClient.readWriteTransaction()).thenReturn(transactionRunner);
+        when(transactionRunner.run(any())).thenAnswer(invocation -> {
+            TransactionRunner.TransactionCallable<?> callable = invocation.getArgument(0);
+            return callable.run(transactionContext);
+        });
+        when(transactionContext.executeUpdate(any(Statement.class))).thenReturn(1L);
+
+        StepVerifier.create(repository.updateKycProfileStatus("usr_1001", "ACCEPTED", "Remarks", null, "admin"))
+                .verifyComplete();
+
+        ArgumentCaptor<Statement> statementCaptor = ArgumentCaptor.forClass(Statement.class);
+        verify(transactionContext).executeUpdate(statementCaptor.capture());
+        Statement executed = statementCaptor.getValue();
+        assertThat(executed.getSql()).contains("UPDATE kyc_profile SET");
+        assertThat(executed.getParameters()).containsKey("userId");
+        assertThat(executed.getParameters()).containsKey("status");
     }
 }

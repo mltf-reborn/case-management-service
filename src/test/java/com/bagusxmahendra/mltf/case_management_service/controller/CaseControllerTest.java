@@ -55,6 +55,7 @@ class CaseControllerTest {
                 Map.of("status", "SUCCESS", "scores", Map.of("documentScore", 98.0)),
                 Map.of("status", "SUCCESS", "isIdentical", true, "confidenceScore", 96.5),
                 Map.of("fullName", "Ahmad Syazwan", "idCardNumber", "940822-10-5819"),
+                null,
                 5.0,
                 "LOW",
                 null,
@@ -147,6 +148,7 @@ class CaseControllerTest {
                 null,
                 null,
                 null,
+                null,
                 "supervisor-agent",
                 now,
                 now
@@ -178,8 +180,8 @@ class CaseControllerTest {
     @Test
     void getCases_byUserId_returnsCaseList() {
         Instant now = Instant.now();
-        CaseResponse c1 = new CaseResponse("C1", "usr_1001", "KYC", "IN_PROGRESS", null, null, null, null, null, null, null, null, null, null, now, now);
-        CaseResponse c2 = new CaseResponse("C2", "usr_1001", "KYC", "ACCEPTED", null, null, null, null, null, null, null, null, null, null, now, now);
+        CaseResponse c1 = new CaseResponse("C1", "usr_1001", "KYC", "IN_PROGRESS", null, null, null, null, null, null, null, null, null, null, null, now, now);
+        CaseResponse c2 = new CaseResponse("C2", "usr_1001", "KYC", "ACCEPTED", null, null, null, null, null, null, null, null, null, null, null, now, now);
 
         when(caseService.getCasesByUserId("usr_1001")).thenReturn(Flux.just(c1, c2));
 
@@ -200,6 +202,7 @@ class CaseControllerTest {
                 "usr_1001",
                 "KYC",
                 "ACCEPTED",
+                null,
                 null,
                 null,
                 null,

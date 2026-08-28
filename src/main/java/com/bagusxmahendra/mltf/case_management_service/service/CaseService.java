@@ -63,6 +63,7 @@ public class CaseService {
         String docVerificationJson = convertToJsonString(request.getDocumentVerificationDetails());
         String selfieDetailsJson = convertToJsonString(request.getSelfieDetails());
         String kycDetailsJson = convertToJsonString(request.getKycDetails());
+        String externalKycDetailsJson = convertToJsonString(request.getExternalKycDetails());
 
         // 3. Enforce Business Rule: Case creation is ONLY for IN_REVIEW status.
         // Automated APPROVED and REJECTED statuses are processed automatically and do not create cases.
@@ -122,6 +123,7 @@ public class CaseService {
                 docVerificationJson,
                 selfieDetailsJson,
                 kycDetailsJson,
+                externalKycDetailsJson,
                 riskScore,
                 riskLevel,
                 rejectionReason,
@@ -238,6 +240,7 @@ public class CaseService {
                             existing.documentVerificationDetails(),
                             existing.selfieDetails(),
                             existing.kycDetails(),
+                            existing.externalKycDetails(),
                             existing.riskScore(),
                             existing.riskLevel(),
                             updatedRejection,
@@ -247,10 +250,17 @@ public class CaseService {
                             now
                     );
 
-                    log.info("Updating case status – caseId: {}, oldStatus: {}, newStatus: {}",
-                            sanitizedId, existing.caseStatus(), newStatus);
+                    log.info("Updating case status – caseId: {}, userId: {}, oldStatus: {}, newStatus: {}",
+                            sanitizedId, existing.userId(), existing.caseStatus(), newStatus);
 
                     return caseRepository.save(updatedEntity)
+                            .then(caseRepository.updateKycProfileStatus(
+                                    existing.userId(),
+                                    newStatus.name(),
+                                    updatedRemarks,
+                                    updatedRejection,
+                                    updatedAssignedTo
+                            ))
                             .thenReturn(CaseResponse.from(updatedEntity, objectMapper));
                 });
     }

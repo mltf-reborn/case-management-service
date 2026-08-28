@@ -19,6 +19,7 @@ public record CaseResponse(
         Object documentVerificationDetails,
         Object selfieDetails,
         Object kycDetails,
+        Object externalKycDetails,
         Double riskScore,
         String riskLevel,
         String rejectionReason,
@@ -36,6 +37,7 @@ public record CaseResponse(
         Object docVerification = parseJson(entity.documentVerificationDetails(), objectMapper);
         Object selfieDetails = parseJson(entity.selfieDetails(), objectMapper);
         Object kycDetails = parseJson(entity.kycDetails(), objectMapper);
+        Object externalKycDetails = parseJson(entity.externalKycDetails(), objectMapper);
 
         return new CaseResponse(
                 entity.caseId(),
@@ -47,6 +49,7 @@ public record CaseResponse(
                 docVerification,
                 selfieDetails,
                 kycDetails,
+                externalKycDetails,
                 entity.riskScore(),
                 entity.riskLevel(),
                 entity.rejectionReason(),

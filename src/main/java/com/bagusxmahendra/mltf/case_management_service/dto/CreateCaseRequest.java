@@ -39,6 +39,10 @@ public class CreateCaseRequest {
     @JsonAlias({"kyc_details", "kycCaseDetails", "kyc_case_details", "kycProfile", "kyc_profile", "profile"})
     private Object kycDetails;
 
+    @JsonProperty("externalKycDetails")
+    @JsonAlias({"external_kyc_details", "externalKyc", "extKycDetails", "ext_kyc_details"})
+    private Object externalKycDetails;
+
     @JsonProperty("documentVerificationDetails")
     @JsonAlias({"document_verification_details", "docVerificationDetails", "doc_verification_details", "documentProcessingResult", "docProcessingResponse", "documentVerification"})
     private Object documentVerificationDetails;
@@ -124,6 +128,14 @@ public class CreateCaseRequest {
 
     public void setKycDetails(Object kycDetails) {
         this.kycDetails = kycDetails;
+    }
+
+    public Object getExternalKycDetails() {
+        return externalKycDetails;
+    }
+
+    public void setExternalKycDetails(Object externalKycDetails) {
+        this.externalKycDetails = externalKycDetails;
     }
 
     public Object getDocumentVerificationDetails() {

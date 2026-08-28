@@ -186,6 +186,7 @@ class CaseServiceTest {
                 "{\"status\":\"SUCCESS\"}",
                 "{\"isIdentical\":true}",
                 "{\"fullName\":\"John\"}",
+                null,
                 10.0,
                 "LOW",
                 null,
@@ -215,7 +216,7 @@ class CaseServiceTest {
     }
 
     @Test
-    void updateCaseStatus_toAccepted_updatesAndSaves() {
+    void updateCaseStatus_toAccepted_updatesAndSavesCaseAndProfile() {
         Instant now = Instant.now();
         CaseEntity existing = new CaseEntity(
                 "CASE-123",
@@ -231,12 +232,14 @@ class CaseServiceTest {
                 null,
                 null,
                 null,
+                null,
                 "supervisor",
                 now,
                 now
         );
         when(caseRepository.findById("CASE-123")).thenReturn(Mono.just(existing));
         when(caseRepository.save(any(CaseEntity.class))).thenReturn(Mono.empty());
+        when(caseRepository.updateKycProfileStatus(anyString(), anyString(), any(), any(), any())).thenReturn(Mono.empty());
 
         UpdateCaseStatusRequest updateRequest = new UpdateCaseStatusRequest("ACCEPTED", "Approved after review", null, "admin_user");
 
@@ -247,5 +250,49 @@ class CaseServiceTest {
                     assertThat(resp.assignedTo()).isEqualTo("admin_user");
                 })
                 .verifyComplete();
+
+        verify(caseRepository).save(any(CaseEntity.class));
+        verify(caseRepository).updateKycProfileStatus("usr_1001", "ACCEPTED", "Approved after review", null, "admin_user");
+    }
+
+    @Test
+    void updateCaseStatus_toRejected_updatesAndSavesCaseAndProfile() {
+        Instant now = Instant.now();
+        CaseEntity existing = new CaseEntity(
+                "CASE-456",
+                "usr_2002",
+                CaseType.KYC,
+                CaseStatus.IN_PROGRESS,
+                "gs://doc",
+                "gs://selfie",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "supervisor",
+                now,
+                now
+        );
+        when(caseRepository.findById("CASE-456")).thenReturn(Mono.just(existing));
+        when(caseRepository.save(any(CaseEntity.class))).thenReturn(Mono.empty());
+        when(caseRepository.updateKycProfileStatus(anyString(), anyString(), any(), any(), any())).thenReturn(Mono.empty());
+
+        UpdateCaseStatusRequest updateRequest = new UpdateCaseStatusRequest("REJECTED", "Tampered ID detected", "Document forgery suspected", "compliance_officer");
+
+        StepVerifier.create(caseService.updateCaseStatus("CASE-456", updateRequest))
+                .assertNext(resp -> {
+                    assertThat(resp.caseStatus()).isEqualTo("REJECTED");
+                    assertThat(resp.remarks()).isEqualTo("Tampered ID detected");
+                    assertThat(resp.rejectionReason()).isEqualTo("Document forgery suspected");
+                    assertThat(resp.assignedTo()).isEqualTo("compliance_officer");
+                })
+                .verifyComplete();
+
+        verify(caseRepository).save(any(CaseEntity.class));
+        verify(caseRepository).updateKycProfileStatus("usr_2002", "REJECTED", "Tampered ID detected", "Document forgery suspected", "compliance_officer");
     }
 }

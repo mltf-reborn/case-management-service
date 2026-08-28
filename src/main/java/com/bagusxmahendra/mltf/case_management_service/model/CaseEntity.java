@@ -15,6 +15,7 @@ public record CaseEntity(
         String documentVerificationDetails,
         String selfieDetails,
         String kycDetails,
+        String externalKycDetails,
         Double riskScore,
         String riskLevel,
         String rejectionReason,
@@ -68,6 +69,15 @@ public record CaseEntity(
             }
         }
 
+        String externalKycDetailsJson = null;
+        if (!struct.isNull("external_kyc_details")) {
+            try {
+                externalKycDetailsJson = struct.getJson("external_kyc_details");
+            } catch (Exception e) {
+                externalKycDetailsJson = struct.getString("external_kyc_details");
+            }
+        }
+
         Double riskScore = struct.isNull("risk_score") ? null : struct.getDouble("risk_score");
         String riskLevel = struct.isNull("risk_level") ? null : struct.getString("risk_level");
         String rejectionReason = struct.isNull("rejection_reason") ? null : struct.getString("rejection_reason");
@@ -96,6 +106,7 @@ public record CaseEntity(
                 docVerificationJson,
                 selfieDetailsJson,
                 kycDetailsJson,
+                externalKycDetailsJson,
                 riskScore,
                 riskLevel,
                 rejectionReason,
