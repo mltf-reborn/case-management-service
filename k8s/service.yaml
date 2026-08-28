@@ -5,7 +5,7 @@ metadata:
   labels:
     app: case-management-service
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - port: 8082
       targetPort: 8082
