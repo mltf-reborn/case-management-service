@@ -256,7 +256,7 @@ public class CaseService {
                     return caseRepository.save(updatedEntity)
                             .then(caseRepository.updateKycProfileStatus(
                                     existing.userId(),
-                                    newStatus.name(),
+                                    newStatus.toKycProfileStatus(),
                                     updatedRemarks,
                                     updatedRejection,
                                     updatedAssignedTo

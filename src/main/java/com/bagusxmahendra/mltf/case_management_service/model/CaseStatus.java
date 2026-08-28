@@ -5,6 +5,18 @@ public enum CaseStatus {
     ACCEPTED,
     REJECTED;
 
+    /**
+     * Maps this CaseStatus to the corresponding status string used in the kyc_profile table.
+     * kyc_profile accepts: IN_REVIEW, SUCCESS, FAILED
+     */
+    public String toKycProfileStatus() {
+        return switch (this) {
+            case ACCEPTED  -> "SUCCESS";
+            case REJECTED  -> "FAILED";
+            default        -> "IN_REVIEW";
+        };
+    }
+
     public static CaseStatus fromString(String value) {
         if (value == null || value.isBlank()) {
             return IN_PROGRESS;
