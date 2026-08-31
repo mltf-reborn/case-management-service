@@ -98,6 +98,29 @@ class CaseServiceTest {
     }
 
     @Test
+    void createCase_withLoanApplicationCaseType_persistsAsLoanApplicationCase() {
+        when(caseRepository.save(any(CaseEntity.class))).thenReturn(Mono.empty());
+
+        CreateCaseRequest request = new CreateCaseRequest();
+        request.setUserId("usr_1002");
+        request.setCaseType("LOAN_APPLICATION");
+
+        StepVerifier.create(caseService.createCase(request))
+                .assertNext(response -> {
+                    assertThat(response.userId()).isEqualTo("usr_1002");
+                    assertThat(response.caseType()).isEqualTo("LOAN_APPLICATION");
+                    assertThat(response.caseStatus()).isEqualTo("IN_PROGRESS");
+                })
+                .verifyComplete();
+
+        ArgumentCaptor<CaseEntity> captor = ArgumentCaptor.forClass(CaseEntity.class);
+        verify(caseRepository).save(captor.capture());
+        CaseEntity saved = captor.getValue();
+        assertThat(saved.caseType()).isEqualTo(CaseType.LOAN_APPLICATION);
+        assertThat(saved.caseStatus()).isEqualTo(CaseStatus.IN_PROGRESS);
+    }
+
+    @Test
     void createCase_withApprovedKycDetails_returnsBadRequest() {
         CreateCaseRequest request = new CreateCaseRequest();
         request.setUserId("usr_1001");
