@@ -107,6 +107,7 @@ class CaseServiceTest {
 
         StepVerifier.create(caseService.createCase(request))
                 .assertNext(response -> {
+                    assertThat(response.caseId()).startsWith("CASE-LOAN-");
                     assertThat(response.userId()).isEqualTo("usr_1002");
                     assertThat(response.caseType()).isEqualTo("LOAN_APPLICATION");
                     assertThat(response.caseStatus()).isEqualTo("IN_PROGRESS");
@@ -116,6 +117,7 @@ class CaseServiceTest {
         ArgumentCaptor<CaseEntity> captor = ArgumentCaptor.forClass(CaseEntity.class);
         verify(caseRepository).save(captor.capture());
         CaseEntity saved = captor.getValue();
+        assertThat(saved.caseId()).startsWith("CASE-LOAN-");
         assertThat(saved.caseType()).isEqualTo(CaseType.LOAN_APPLICATION);
         assertThat(saved.caseStatus()).isEqualTo(CaseStatus.IN_PROGRESS);
     }

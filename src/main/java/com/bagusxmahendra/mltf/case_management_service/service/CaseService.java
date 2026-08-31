@@ -54,10 +54,16 @@ public class CaseService {
 
         String userId = request.getUserId().trim();
 
+        CaseType caseType = request.getCaseType() != null
+                ? CaseType.fromString(request.getCaseType())
+                : CaseType.KYC;
+
+        CaseStatus caseStatus = CaseStatus.IN_PROGRESS;
+
         // 1. Generate or sanitize case ID
         String caseId = (request.getCaseId() != null && !request.getCaseId().isBlank())
                 ? request.getCaseId().trim()
-                : generateCaseId();
+                : generateCaseId(caseType);
 
         // 2. Serialize Details to JSON Strings for Spanner JSON column storage
         String docVerificationJson = convertToJsonString(request.getDocumentVerificationDetails());
@@ -93,12 +99,6 @@ public class CaseService {
                 ));
             }
         }
-
-        CaseType caseType = request.getCaseType() != null
-                ? CaseType.fromString(request.getCaseType())
-                : CaseType.KYC;
-
-        CaseStatus caseStatus = CaseStatus.IN_PROGRESS;
 
         // 4. Resolve 2 GCS URLs (Document and Selfie) from root or extracted from details
         String documentUrl = resolveDocumentUrl(request.getDocumentUrl(), docVerificationJson, selfieDetailsJson, kycDetailsJson);
@@ -265,9 +265,10 @@ public class CaseService {
                 });
     }
 
-    private String generateCaseId() {
+    private String generateCaseId(CaseType caseType) {
+        String prefix = (caseType == CaseType.LOAN_APPLICATION) ? "CASE-LOAN-" : "CASE-KYC-";
         int suffix = ThreadLocalRandom.current().nextInt(1000, 10000);
-        return "CASE-KYC-" + System.currentTimeMillis() % 1000000 + "-" + suffix;
+        return prefix + System.currentTimeMillis() % 1000000 + "-" + suffix;
     }
 
     private String convertToJsonString(Object obj) {
