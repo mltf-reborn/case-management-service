@@ -275,7 +275,7 @@ class CaseServiceTest {
                 .verifyComplete();
 
         verify(caseRepository).save(any(CaseEntity.class));
-        verify(caseRepository).updateKycProfileStatus("usr_1001", "ACCEPTED", "Approved after review", null, "admin_user");
+        verify(caseRepository).updateKycProfileStatus("usr_1001", "SUCCESS", "Approved after review", null, "admin_user");
     }
 
     @Test
@@ -316,6 +316,6 @@ class CaseServiceTest {
                 .verifyComplete();
 
         verify(caseRepository).save(any(CaseEntity.class));
-        verify(caseRepository).updateKycProfileStatus("usr_2002", "REJECTED", "Tampered ID detected", "Document forgery suspected", "compliance_officer");
+        verify(caseRepository).updateKycProfileStatus("usr_2002", "FAILED", "Tampered ID detected", "Document forgery suspected", "compliance_officer");
     }
 }
